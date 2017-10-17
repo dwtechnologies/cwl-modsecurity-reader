@@ -1,0 +1,19 @@
+{
+  "name": "overwatch-cwl-modsecurity-reader",
+  "version": "1.0.0",
+  "description": "Read CWL mod security and push to ElasticSearch",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "AWS",
+    "ES",
+    "CWL"
+  ],
+  "author": "Patrik Antonsson",
+  "license": "ISC",
+  "dependencies": {
+    "dateformat": "^2.0.0"
+  }
+}

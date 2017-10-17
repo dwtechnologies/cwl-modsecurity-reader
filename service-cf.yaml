@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Package with resources for subscribing to cloudwatch logs (MOD_SECURITY) for further sending to elasticsearch.
+Parameters:
+  ResourceContext:
+    Type: String
+    Default: demo_v1
+    Description: The context that resources will be suffixed with
+  ElasticSearchURL:
+    Type: String
+    Default: xxx
+    Description: Elasticsearch URL
+Resources:
+  CloudwatchModSecurityToElasticsearchRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+                - "logs.eu-west-1.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "CloudwatchModSecurityToElasticsearchRole" #Policy to let role invoke lambda function
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "logs:*"
+            Resource: "arn:aws:logs:*:*:*"
+          -
+            Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Join [ "", ["arn:aws:lambda:", !Ref "AWS::Region", ":*:function:overwatch-cwl-modsecurity-reader-", !Ref "ResourceContext"]]
+          -
+            Effect: "Allow"
+            Action:
+              - "es:ESHttpPost"
+            Resource:
+              - "arn:aws:es:*:*:*"
+      Roles:
+        -
+          Ref: "CloudwatchModSecurityToElasticsearchRole"
+  #################################
+  # LAMBDA Resource
+  #################################
+  CloudwatchApacheToElasticsearchLambda:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: !Join [ "",["overwatch-cwl-modsecurity-reader-", !Ref "ResourceContext"]]
+      Handler: "index.handler"
+      Description: "Lambda function to listen to cloudwatch log events (modSecurity) and push to Elasticsearch"
+      Environment:
+        Variables:
+          ELASTICSEARCH_URL: !Ref ElasticSearchURL
+      Role: !GetAtt CloudwatchModSecurityToElasticsearchRole.Arn
+      Code: "function"
+      MemorySize: 512
+      Runtime: "nodejs6.10"
+      Timeout: "30"
